@@ -73,6 +73,36 @@ app.post('/kleding_items/toevoegen', async (req, res) => {
   });
   
 
+  // kleiding stukken verwijderen
+  app.delete('/kleding_items/verwijderen/:id', async (req, res) => {
+    const { id } = req.params; 
+    
+    try 
+    {
+        const [result] = await pool.query(
+        'DELETE FROM kleding_items  WHERE id = ?;',
+        [id] 
+    );
+  
+    if (result.affectedRows === 0) 
+    {
+        return res.status(404).json({ message: 'Kleding item niet gevonden' });
+    }
+  
+    res.json
+    ({ 
+        message: 'kleding item is verwijderd',
+        affectedRows: result.affectedRows 
+    });
+    } 
+    catch (err) 
+    {
+        console.error('Fout bij updaten van het kleding item:', err);
+        res.status(500).send('Er is een fout opgetreden bij het updaten van data');
+    }
+  });
+
+
 // Server starten
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
