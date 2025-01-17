@@ -5,45 +5,66 @@ const pool = require('./db');
 const app = express();
 app.use(bodyParser.json()); // Voor JSON-parsing
 
+// validatie dat de gegevens niet leeg zijn
+function validateKledingItem(data) {
+  const { titel, content } = data;
+
+  if (!titel || typeof titel !== 'string') {
+      return { isValid: false, message: 'Titel mag niet leeg zijn en moet een string zijn.' };
+  }
+
+  if (!content || typeof content !== 'string') {
+      return { isValid: false, message: 'Content mag niet leeg zijn en moet een string zijn.' };
+  }
+
+  return { isValid: true };
+}
+
 app.get('/', (req, res) => 
     {
     res.send('test kleding items');
   });
 
-// alle kleding stukken ophalen uit de db
+// endpoint voor kleding met een limit en offset (eerste 10 items laten zien)
 app.get('/kleding_items', async (req, res) => {
-  try 
-  {
-    const [rows] = await pool.query('SELECT * FROM kleding_items'); 
-    res.json(rows);
-  } 
-  catch (err) 
-  {
-    console.error('Error fetching kleding items:', err.message);
-    res.status(500).send('Error retrieving data from the database');
+  const { limit = 10, offset = 0 } = req.query;
+
+  try {
+      const [rows] = await pool.query('SELECT * FROM kleding_items LIMIT ? OFFSET ?', [parseInt(limit), parseInt(offset)]);
+      res.json(rows);
+  } catch (err) {
+      console.error('Fout bij het ophalen van kleding items:', err.message);
+      res.status(500).send('Error retrieving data from the database');
   }
 });
 
-// specifiek kledingstuk ophalen
-app.get('/kleding_items/:id', async (req, res) => {
-    const { id } = req.params; 
-    try 
-    {
-      const [rows] = await pool.query('SELECT * FROM kleding_items WHERE id = ?', [id]); 
+// endpoint toevoegen voor het zoeken naar kleding
+app.get('/kleding_items/zoeken', async (req, res) => 
+{
+  const { searchTerm } = req.query;
+
+  if (!searchTerm) {
+      return res.status(400).send('Zoekterm is vereist.');
+  }
+
+  try {
+      const [rows] = await pool.query('SELECT * FROM kleding_items WHERE titel LIKE ? OR content LIKE ?', [`%${searchTerm}%`, `%${searchTerm}%`]);
       res.json(rows);
-      
-    } 
-    catch (err) 
-    {
-      console.error('Error fetching kleding items:', err.message);
+  } catch (err) {
+      console.error('Fout bij het zoeken naar kleding items:', err.message);
       res.status(500).send('Error retrieving data from the database');
-    }
-  });
+  }
+});
 
 // nieuwe kleren toevoegen
 app.post('/kleding_items/toevoegen', async (req, res) => {
     const { titel, content } = req.body; 
     
+    // validatie gebruiken
+    const validation = validateKledingItem(req.body);
+    if (!validation.isValid) {
+        return res.status(400).send(validation.message);
+    }
     try {
       // Voer een INSERT query uit
       const [result] = await pool.query(
@@ -67,6 +88,12 @@ app.post('/kleding_items/toevoegen', async (req, res) => {
     const { id } = req.params; 
     const { titel, content } = req.body; 
   
+    //validatie gebruiken
+    const validation = validateKledingItem(req.body);
+    if (!validation.isValid) {
+        return res.status(400).send(validation.message);
+    }
+
     try {
       // Voer een UPDATE query uit
       const [result] = await pool.query(
@@ -119,6 +146,7 @@ app.post('/kleding_items/toevoegen', async (req, res) => {
   });
 
 
+  
 // Server starten
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
