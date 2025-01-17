@@ -7,7 +7,7 @@ app.use(bodyParser.json()); // Voor JSON-parsing
 
 app.get('/', (req, res) => 
     {
-    res.send('test');
+    res.send('test kleding items');
   });
 
 // alle kleding stukken ophalen uit de db
