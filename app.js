@@ -24,6 +24,22 @@ app.get('/kleding_items', async (req, res) => {
   }
 });
 
+// specifiek kledingstuk ophalen
+app.get('/kleding_items/:id', async (req, res) => {
+    const { id } = req.params; 
+    try 
+    {
+      const [rows] = await pool.query('SELECT * FROM kleding_items WHERE id = ?', [id]); 
+      res.json(rows);
+      
+    } 
+    catch (err) 
+    {
+      console.error('Error fetching kleding items:', err.message);
+      res.status(500).send('Error retrieving data from the database');
+    }
+  });
+
 // nieuwe kleren toevoegen
 app.post('/kleding_items/toevoegen', async (req, res) => {
     const { titel, content } = req.body; 
@@ -47,7 +63,7 @@ app.post('/kleding_items/toevoegen', async (req, res) => {
   });
 
   // kleiding stukken aanpassesn
-  app.put('/kleding_items/:id', async (req, res) => {
+  app.put('/kleding_items/aanpassen/:id', async (req, res) => {
     const { id } = req.params; 
     const { titel, content } = req.body; 
   
